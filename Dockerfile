@@ -20,6 +20,7 @@ ENV \
     UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON_PREFERENCE=only-system \
     UV_LINK_MODE=copy \
+    UV_TOOL_BIN_DIR=/usr/bin \
     UV_PROJECT_ENVIRONMENT=/usr
 
 # Ports for jupyter and tensorboard
@@ -34,4 +35,18 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=.git,target=.git \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-     uv sync --frozen --inexact
+     uv sync --inexact
+
+# Install the project
+COPY src/computervision/__init__.py \
+    src/computervision/VERSION src/computervision
+COPY pyproject.toml uv.lock ./
+RUN uv sync --inexact
+
+# Copy bash scripts and set executable flags
+RUN mkdir -p /run_scripts
+COPY /bash_scripts/* /run_scripts
+RUN chmod +x /run_scripts/*
+
+# Run the jupyter server
+CMD ["/bin/bash", "/run_scripts/docker_entry"]
