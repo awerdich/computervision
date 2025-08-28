@@ -9,6 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = []
 
+[tool.uv]
+python-preference = "only-system"
+
 [project.scripts]
 computervision = "computervision:main"
 
