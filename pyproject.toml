@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "computervision"
 dynamic = ["version"]
-description = "The CCB Computervision Repository"
+description = "The CCB Computer Vision Repository"
 readme = "README.md"
 authors = [
     { name = "Andreas Werdich", email = "andreas_werdich@hms.harvard.edu" }
