@@ -1,0 +1,8 @@
+# Data directory
+DATA_DIR="/app/data"
+
+# URL for image classification
+CL_URL="https://dsets.s3.amazonaws.com/dentex/dentex-quadrant-enumeration-disease.tar.gz"
+
+# URL for object detection
+DT_URL="https://dsets.s3.amazonaws.com/dentex/dentex-quadrant-enumeration.tar.gz"
