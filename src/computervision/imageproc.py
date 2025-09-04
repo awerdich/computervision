@@ -10,6 +10,7 @@ import copy
 import numpy as np
 import cv2
 import logging
+import itertools
 from skimage import io
 from PIL import Image
 
@@ -18,6 +19,12 @@ logger = logging.getLogger(name=__name__)
 
 def clip_range(r, min_val=0, max_val=1):
     return max(min(r, max_val), min_val)
+
+def flatten(list_of_lists: list) -> list:
+    """
+    Flattens a list of lists into a single list.
+    """
+    return list(itertools.chain.from_iterable(list_of_lists))
 
 def transform_box(box_padded, img, pad_pixels=0):
     """
@@ -77,6 +84,33 @@ def yolo2xywh(yolobox: list, width: int, height: int) -> list:
                 (y_rel-(h_rel/2)) * height,
                 w_rel * width, h_rel * height]
     return xywh
+
+def compass_box(bbox_list_xywh: list, offset:int) -> list:
+    """
+    Calculate and return a bounding box encapsulating all input bounding boxes with an
+    optional offset.
+
+    This function takes a list of bounding boxes in `xywh` format and computes a new
+    bounding box that encompasses all of them with an additional offset. The conversion
+    to and from `xywh` and `xyxy` formats is handled internally to facilitate calculations.
+
+    Parameters:
+    - bbox_list_xywh (list): A list of bounding boxes, each represented in the format [x, y, w, h].
+    - offset (int): The amount to expand the final bounding box outward on all sides.
+
+    Returns:
+    - list: A single bounding box in `xywh` format representing the encompassing box
+      of all input bounding boxes with the specified offset applied.
+    """
+    assert isinstance(bbox_list_xywh, list)
+    bbox_list_xyxy = [xywh2xyxy(bbox) for bbox in bbox_list_xywh]
+    bbox_list_x = flatten([[bbox[0], bbox[2]] for bbox in bbox_list_xyxy])
+    bbox_list_y = flatten([[bbox[1], bbox[3]] for bbox in bbox_list_xyxy])
+    quadrant_bbox_xywh = xyxy2xywh([min(bbox_list_x)-offset,
+                                    min(bbox_list_y)-offset,
+                                    max(bbox_list_x)+offset,
+                                    max(bbox_list_y)+offset])
+    return quadrant_bbox_xywh
 
 def crop_image(image, box):
     """
