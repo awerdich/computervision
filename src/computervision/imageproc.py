@@ -64,6 +64,35 @@ def clipxyxy(xyxy, xlim, ylim, decimals=None):
     return output
 
 def clipxywh(xywh, xlim, ylim, decimals=None):
+    """
+    Clips a bounding box defined in [x_min, y_min, width, height] format to specified limits.
+
+    This function ensures that the bounding box defined in xywh format is clipped to the
+    given x and y-axis limits. The returned bounding box coordinates remain within the specified bounds.
+
+    Parameters:
+    xywh : list
+        A list representing the bounding box in [x_min, y_min, width, height] format.
+        Must be of length 4.
+    xlim : list
+        A list of two float or integer values representing the minimum and maximum x-axis
+        limits, in the format [min, max].
+    ylim : list
+        A list of two float or integer values representing the minimum and maximum y-axis
+        limits, in the format [min, max].
+    decimals : int, optional
+        Number of decimal places to round the clipped bounding box values. If None, no rounding
+        will be performed. Default is None.
+
+    Returns:
+    list
+        A list representing the clipped bounding box in [x_min, y_min, width, height] format.
+
+    Raises:
+    AssertionError
+        If `xywh` is not a list or does not have a length of 4.
+        If `xlim` or `ylim` are not lists of length 2.
+    """
     assert isinstance(xywh, list) and len(xywh)==4, 'xywh must be a bounding box [x_min, y_min, width, height]'
     assert len(xlim)==len(ylim)==2, 'xlim and xlim must be lists [min, max]'
     xyxy = xywh2xyxy(xywh)
@@ -85,7 +114,7 @@ def yolo2xywh(yolobox: list, width: int, height: int) -> list:
                 w_rel * width, h_rel * height]
     return xywh
 
-def compass_box(bbox_list_xywh: list, offset:int) -> list:
+def enclosing_box(bbox_list_xywh: list, offset:int) -> list:
     """
     Calculate and return a bounding box encapsulating all input bounding boxes with an
     optional offset.
