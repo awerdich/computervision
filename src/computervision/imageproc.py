@@ -210,7 +210,14 @@ def determine_bbox_format(bbox):
     return output
 
 class ImageData:
-    """ Load and transform images """
+    """
+    Represents image data processing functionality.
+
+    This class provides various utilities for image manipulation and transformation, including
+    image loading, padding, converting color schemes, resizing, and histogram equalization.
+    The tools are designed to handle images represented as numpy arrays and perform image
+    preprocessing tasks efficiently.
+    """
 
     def __init__(self, resize=None):
         self.resize = resize
@@ -310,18 +317,46 @@ class ImageData:
         output_image_list = [cv2.resize(im, dim, interpolation=cv2.INTER_AREA) for im in image_list]
         return output_image_list
 
-    def hist_eq(self, img):
-        """ Adaptive histogram equalization
-        Parameters:
-            img (np.ndarray) RGB image
-        Returns:
-            enhanced_img (np.ndarray) RGB image with enhanced contrast
+    def hist_eq(self, img, color_space='RGB'):
         """
+        Enhances the contrast of an image using Contrast Limited Adaptive Histogram 
+        Equalization (CLAHE) in the LAB color space. The method supports output in 
+        different color spaces such as RGB, BGR, or grayscale.
+
+        Parameters
+        ----------
+        img : numpy.ndarray
+            Input image to be processed. It can be either grayscale or RGB.
+        color_space : str, optional
+            Specifies the desired output color space. Must be one of 'RGB', 'BGR', 
+            or 'GRAY'. Defaults to 'RGB'.
+
+        Returns
+        -------
+        numpy.ndarray
+            Image with enhanced contrast in the specified color space.
+
+        Raises
+        ------
+        ValueError
+            If an unsupported color space is passed to the `color_space` parameter.
+        """
+        # If the image is grayscale, convert it to RGB
+        if len(img.shape) != 3:
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
         l_channel, a, b = cv2.split(lab)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         cl = clahe.apply(l_channel)
         lim_g = cv2.merge((cl, a, b))
-        enhanced_img = cv2.cvtColor(lim_g, cv2.COLOR_LAB2RGB)
+        if color_space == 'RGB':
+            enhanced_img = cv2.cvtColor(lim_g, cv2.COLOR_LAB2RGB)
+        elif color_space == 'BGR':
+            enhanced_img = cv2.cvtColor(lim_g, cv2.COLOR_LAB2BGR)
+        elif color_space == 'GRAY':
+            enhanced_img = cv2.cvtColor(lim_g, cv2.COLOR_LAB2RGB)
+            enhanced_img = cv2.cvtColor(enhanced_img, cv2.COLOR_RGB2GRAY)
+        else:
+            raise ValueError('Unsupported color space')
         return enhanced_img
 
