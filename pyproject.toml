@@ -17,6 +17,7 @@ dependencies = [
     "opencv-python-headless",
     "numpy<2.0",
     "scikit-image>=0.25.2",
+    "albumentationsx>=2.0.10",
 ]
 
 [tool.uv]
