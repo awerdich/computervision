@@ -99,20 +99,87 @@ def clipxywh(xywh, xlim, ylim, decimals=None):
     xyxy_clipped = clipxyxy(xyxy=xyxy, xlim=xlim, ylim=ylim, decimals=decimals)
     return xyxy2xywh(xyxy_clipped)
 
-def yolo2xywh(yolobox: list, width: int, height: int) -> list:
+
+def yolo2xywh(yolo_bbox: list, image_width: int, image_height: int):
     """
-    Converts a YOLO format bounding box to standard XYWH format.
+    Converts a bounding box from YOLO format to XYWH format.
+
+    This function takes a bounding box in YOLO format (center_x, center_y, width, height),
+    where the values are relative to the size of the image (normalized between 0 and 1),
+    and converts it to XYWH format (x_min, y_min, width, height) that describes the position
+    and size in absolute pixel coordinates.
+
+    Arguments:
+        yolo_box (list): A list consisting of four elements [center_x, center_y, width, height]
+            in YOLO format with values in the range [0, 1].
+        image_width (int): The width of the image in pixels.
+        image_height (int): The height of the image in pixels.
+
+    Returns:
+        list: A list of four integers [x_min, y_min, width, height] representing the bounding box
+            in XYWH format where:
+            - x_min, y_min are the top-left corner coordinates.
+            - width, height are the scaled dimensions of the bounding box.
     """
-    try:
-        assert isinstance(yolobox, (list, tuple, np.ndarray)) and len(yolobox)==4
-    except:
-        raise AssertionError('yolobox is a bounding box in yolo format!')
-    else:
-        x_rel, y_rel, w_rel, h_rel = yolobox
-        xywh = [(x_rel-(w_rel/2)) * width,
-                (y_rel-(h_rel/2)) * height,
-                w_rel * width, h_rel * height]
-    return xywh
+    # Consistency checks
+    assert isinstance(yolo_bbox, list), 'input_box must be a list'
+    assert isinstance(image_height, int), 'image_height must be int'
+    assert isinstance(image_width, int), 'image_width must be int'
+    assert all((c <= 1) & (c >= 0) for c in yolo_bbox)
+    center_x = yolo_bbox[0] * image_width
+    center_y = yolo_bbox[1] * image_height
+    width = yolo_bbox[2] * image_width
+    height = yolo_bbox[3] * image_height
+    x_min = center_x - (image_width / 2)
+    y_min = center_y - (image_height / 2)
+    output_box = list(np.round(np.array([x_min, y_min, width, height])).astype(int))
+    return output_box
+
+
+def xywh2yolo(coco_bbox: list, image_width: int, image_height: int, clip=True):
+    """
+    Converts bounding box coordinates from COCO format to YOLO format.
+
+    The COCO bounding box format (x_min, y_min, width, height) is converted to YOLO
+    bounding box format (x_center, y_center, width, height) where all values are
+    normalized by the respective dimensions of the image. Optionally, the values
+    can also be clipped to the range [0.0, 1.0].
+
+    Parameters:
+        coco_bbox (list): The bounding box in COCO format (x_min, y_min, width, height).
+        image_width (int): The width of the image.
+        image_height (int): The height of the image.
+        clip (bool): Whether to clip the output values to the range [0.0, 1.0].
+            Defaults to True.
+
+    Returns:
+        list: The bounding box in YOLO format (x_center, y_center, width, height).
+
+    Raises:
+        ValueError: If image_width or image_height is not positive.
+    """
+    # Consistency checks
+    assert isinstance(coco_bbox, list), 'input_box must be a list'
+    assert isinstance(image_height, int), 'image_height must be int'
+    assert isinstance(image_width, int), 'image_width must be int'
+    x, y, w, h = map(float, coco_bbox)
+    if image_width <= 0 or image_height <= 0:
+        raise ValueError("img_w and img_h must be positive.")
+    # center in pixels
+    x_c = x + image_width / 2.0
+    y_c = y + image_height / 2.0
+    # normalize
+    x_c /= image_width
+    y_c /= image_height
+    w /= image_width
+    h /= image_height
+    if clip:
+        x_c = min(max(x_c, 0.0), 1.0)
+        y_c = min(max(y_c, 0.0), 1.0)
+        w = min(max(w, 0.0), 1.0)
+        h = min(max(h, 0.0), 1.0)
+    output_box = [x_c, y_c, w, h]
+    return output_box
 
 def enclosing_box(bbox_list_xywh: list, offset:int) -> list:
     """
