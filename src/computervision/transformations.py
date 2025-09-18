@@ -76,7 +76,7 @@ class DETRansform:
         assert len(bboxes) == len(labels), 'We need as many labels as bounding boxes: len(bboxes) == len(labels)!'
         assert len(self.bbox_format.get('label_fields')) == 1, 'We can only use one set of labels.'
         assert self.bbox_format.get(
-            'format') == 'coco', f'Bounding box format must be "coco", but is: {bbox_format.get("format")}!'
+            'format') == 'coco', f'Bounding box format must be "coco", but is: {self.bbox_format.get("format")}!'
         assert isinstance(image_id, int), 'Image ID must be of type int.'
         assert all(isinstance(l, int) for l in labels), 'All labels must be class IDs (int).'
 
