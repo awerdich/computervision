@@ -69,29 +69,6 @@ def clipxywh(xywh, xlim, ylim, decimals=None):
 
     This function ensures that the bounding box defined in xywh format is clipped to the
     given x and y-axis limits. The returned bounding box coordinates remain within the specified bounds.
-
-    Parameters:
-    xywh : list
-        A list representing the bounding box in [x_min, y_min, width, height] format.
-        Must be of length 4.
-    xlim : list
-        A list of two float or integer values representing the minimum and maximum x-axis
-        limits, in the format [min, max].
-    ylim : list
-        A list of two float or integer values representing the minimum and maximum y-axis
-        limits, in the format [min, max].
-    decimals : int, optional
-        Number of decimal places to round the clipped bounding box values. If None, no rounding
-        will be performed. Default is None.
-
-    Returns:
-    list
-        A list representing the clipped bounding box in [x_min, y_min, width, height] format.
-
-    Raises:
-    AssertionError
-        If `xywh` is not a list or does not have a length of 4.
-        If `xlim` or `ylim` are not lists of length 2.
     """
     assert isinstance(xywh, list) and len(xywh)==4, 'xywh must be a bounding box [x_min, y_min, width, height]'
     assert len(xlim)==len(ylim)==2, 'xlim and xlim must be lists [min, max]'
@@ -101,26 +78,6 @@ def clipxywh(xywh, xlim, ylim, decimals=None):
 
 
 def yolo2xywh(yolo_bbox: list, image_width: int, image_height: int):
-    """
-    Converts a bounding box from YOLO format to XYWH format.
-
-    This function takes a bounding box in YOLO format (center_x, center_y, width, height),
-    where the values are relative to the size of the image (normalized between 0 and 1),
-    and converts it to XYWH format (x_min, y_min, width, height) that describes the position
-    and size in absolute pixel coordinates.
-
-    Arguments:
-        yolo_box (list): A list consisting of four elements [center_x, center_y, width, height]
-            in YOLO format with values in the range [0, 1].
-        image_width (int): The width of the image in pixels.
-        image_height (int): The height of the image in pixels.
-
-    Returns:
-        list: A list of four integers [x_min, y_min, width, height] representing the bounding box
-            in XYWH format where:
-            - x_min, y_min are the top-left corner coordinates.
-            - width, height are the scaled dimensions of the bounding box.
-    """
     # Consistency checks
     assert isinstance(yolo_bbox, list), 'input_box must be a list'
     assert isinstance(image_height, int), 'image_height must be int'
@@ -130,55 +87,34 @@ def yolo2xywh(yolo_bbox: list, image_width: int, image_height: int):
     center_y = yolo_bbox[1] * image_height
     width = yolo_bbox[2] * image_width
     height = yolo_bbox[3] * image_height
-    x_min = center_x - (image_width / 2)
-    y_min = center_y - (image_height / 2)
-    output_box = list(np.round(np.array([x_min, y_min, width, height])).astype(int))
+    x_min = center_x - (width / 2)
+    y_min = center_y - (height / 2)
+    output_box = [x_min, y_min, width, height]
     return output_box
 
 
 def xywh2yolo(coco_bbox: list, image_width: int, image_height: int, clip=True):
-    """
-    Converts bounding box coordinates from COCO format to YOLO format.
-
-    The COCO bounding box format (x_min, y_min, width, height) is converted to YOLO
-    bounding box format (x_center, y_center, width, height) where all values are
-    normalized by the respective dimensions of the image. Optionally, the values
-    can also be clipped to the range [0.0, 1.0].
-
-    Parameters:
-        coco_bbox (list): The bounding box in COCO format (x_min, y_min, width, height).
-        image_width (int): The width of the image.
-        image_height (int): The height of the image.
-        clip (bool): Whether to clip the output values to the range [0.0, 1.0].
-            Defaults to True.
-
-    Returns:
-        list: The bounding box in YOLO format (x_center, y_center, width, height).
-
-    Raises:
-        ValueError: If image_width or image_height is not positive.
-    """
     # Consistency checks
     assert isinstance(coco_bbox, list), 'input_box must be a list'
     assert isinstance(image_height, int), 'image_height must be int'
     assert isinstance(image_width, int), 'image_width must be int'
-    x, y, w, h = map(float, coco_bbox)
+    x_min, y_min, width, height = map(float, coco_bbox)
     if image_width <= 0 or image_height <= 0:
         raise ValueError("img_w and img_h must be positive.")
     # center in pixels
-    x_c = x + image_width / 2.0
-    y_c = y + image_height / 2.0
+    center_x = x_min + (width / 2.0)
+    center_y = y_min + (height / 2.0)
     # normalize
-    x_c /= image_width
-    y_c /= image_height
-    w /= image_width
-    h /= image_height
+    x_rel = center_x / image_width
+    y_rel = center_y / image_height
+    w_rel = width / image_width
+    h_rel = height / image_height
     if clip:
-        x_c = min(max(x_c, 0.0), 1.0)
-        y_c = min(max(y_c, 0.0), 1.0)
-        w = min(max(w, 0.0), 1.0)
-        h = min(max(h, 0.0), 1.0)
-    output_box = [x_c, y_c, w, h]
+        x_rel = min(max(x_rel, 0.0), 1.0)
+        y_rel = min(max(y_rel, 0.0), 1.0)
+        w_rel = min(max(w_rel, 0.0), 1.0)
+        h_rel = min(max(h_rel, 0.0), 1.0)
+    output_box = [x_rel, y_rel, w_rel, h_rel]
     return output_box
 
 def enclosing_box(bbox_list_xywh: list, offset:int) -> list:
