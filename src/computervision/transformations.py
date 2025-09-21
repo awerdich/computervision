@@ -1,6 +1,29 @@
 """ Methods for transforming images and bounding boxes """
 import numpy as np
 import albumentations as alb
+from dataclasses import dataclass
+
+@dataclass
+class Transformations:
+    image_width: int
+    image_height: int
+
+    def get_transformations(self, name: str) -> list:
+
+        if name == "train_1":
+            transforms = [alb.RandomCropFromBorders(crop_left=0.3, crop_right=0.3, crop_top=0.5, crop_bottom=0.5, p=1.0),
+                          alb.CenterCrop(height=self.image_height, width=self.image_width, pad_if_needed=True),
+                          alb.Affine(scale=(0.8, 1.2), rotate=1, p=0.5),
+                          alb.RandomBrightnessContrast(p=0.5),
+                          alb.Sharpen(p=0.5),
+                          alb.CLAHE(p=0.5)]
+
+        else:
+            raise NotImplementedError('Transformation {} not implemented'.format(name))
+
+        return transforms
+
+
 
 
 class DETRansform:
