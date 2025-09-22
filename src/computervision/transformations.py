@@ -4,13 +4,13 @@ import albumentations as alb
 from dataclasses import dataclass
 
 @dataclass
-class Transformations:
+class AugmentationTransform:
     image_width: int
     image_height: int
 
-    def get_transformations(self, name: str) -> list:
-
+    def get_transforms(self, name: str) -> list:
         if name == "train_1":
+            # Transformations for training
             transforms = [alb.RandomCropFromBorders(crop_left=0.3, crop_right=0.3, crop_top=0.5, crop_bottom=0.5, p=1.0),
                           alb.CenterCrop(height=self.image_height, width=self.image_width, pad_if_needed=True),
                           alb.Affine(scale=(0.8, 1.2), rotate=1, p=0.5),
@@ -18,12 +18,19 @@ class Transformations:
                           alb.Sharpen(p=0.5),
                           alb.CLAHE(p=0.5)]
 
+        elif name == "val_1":
+            # This transform should be applied on the test set created by the "test_set" transform
+            transforms = [alb.CenterCrop(height=self.image_height, width=self.image_width, pad_if_needed=True)]
+
+        elif name == "test_set":
+            # Transformations for creating the test/validation sets
+            transforms = [alb.RandomCropFromBorders(crop_left=0.3, crop_right=0.3, crop_top=0.5, crop_bottom=0.5, p=1.0),
+                          alb.RandomBrightnessContrast(p=1.0)]
+
         else:
-            raise NotImplementedError('Transformation {} not implemented'.format(name))
+            raise NotImplementedError('Transformation "{}" not implemented'.format(name))
 
         return transforms
-
-
 
 
 class DETRansform:
@@ -57,11 +64,11 @@ class DETRansform:
             ensures input consistency, and generates annotations suitable
             for the model.
     """
-    def __init__(self, transformations: list = None, bbox_format: dict = None):
-        self.transformations = transformations
+    def __init__(self, transforms: list = None, bbox_format: dict = None):
+        self.transforms = transforms
         self.bbox_format = bbox_format
-        if transformations is None:
-            self.transformations = [alb.NoOp()]
+        if transforms is None:
+            self.transforms = [alb.NoOp()]
         if bbox_format is None:
             self.bbox_format = {'format': 'coco',
                                 'label_fields': ['quadrants', 'positions'],
@@ -83,7 +90,7 @@ class DETRansform:
         bbox_array = np.array(bboxes).reshape(len(bboxes), 4)
 
         # Set up the transformation
-        transformation = alb.Compose(self.transformations, bbox_params=alb.BboxParams(**self.bbox_format))
+        transformation = alb.Compose(self.transforms, bbox_params=alb.BboxParams(**self.bbox_format))
         transformed = transformation(image=image, bboxes=bbox_array, **labels)
 
         # Create the output
