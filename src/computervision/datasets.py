@@ -70,7 +70,7 @@ class DTRdataset(Dataset):
         try:
             assert np.sum(validated) == len(self.file_list)
         except AssertionError:
-            logger.warning(f'Could not validate all images: loaded {validated} / {len(self.file_name_list)} images.')
+            logger.warning(f'Could not validate all images: loaded {validated} / {len(self.file_list)} images.')
         else:
             logger.info(f'Validated {validated} images.')
             output = True
@@ -87,10 +87,8 @@ class DTRdataset(Dataset):
         # Convert to RGB
         if len(image.shape) == 2:
             image = ImageData().np2color(image)
-        bboxes = self.data.loc[self.data[self.file_name_col] == file_name,
-        self.bbox_col].tolist()
-        labels = self.data.loc[self.data[self.file_name_col] == file_name,
-        self.label_id_col].tolist()
+        bboxes = self.data.loc[self.data[self.file_name_col] == file_name, self.bbox_col].tolist()
+        labels = self.data.loc[self.data[self.file_name_col] == file_name, self.label_id_col].tolist()
 
         # Apply image transform
         detr = DETRansform(bbox_format=self.bbox_format, transforms=self.transforms)
