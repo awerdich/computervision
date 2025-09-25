@@ -43,6 +43,14 @@ COPY src/computervision/__init__.py \
 COPY pyproject.toml uv.lock ./
 RUN uv sync --inexact
 
+# Dependencies that depend on the container's libraries
+RUN python -m pip install -U \
+    torchmetrics \
+    timm \
+    accelerate
+
+RUN python -c "from accelerate.utils import write_basic_config; write_basic_config(mixed_precision='fp16')"
+
 # Copy bash scripts and set executable flags
 RUN mkdir -p /run_scripts
 COPY /bash_scripts/* /run_scripts
