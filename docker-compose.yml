@@ -19,6 +19,7 @@ services:
     environment:
     - NVIDIA_VISIBLE_DEVICES=all
     - HOME=/app
+    - DATA=/app/data_model
     env_file:
       - ./env
     ports:
