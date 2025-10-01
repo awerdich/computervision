@@ -14,9 +14,9 @@ from computervision.transformations import DETRansform
 logger = logging.getLogger(__name__)
 
 # GPU checks
-def get_gpu_info(device_str: str = None):
+def get_gpu_info(device_number: int = None):
 
-    if device_str is None:
+    if device_number is None:
         is_cuda = torch.cuda.is_available()
         print(f'CUDA available: {is_cuda}')
         print(f'Number of GPUs found:  {torch.cuda.device_count()}')
@@ -30,15 +30,18 @@ def get_gpu_info(device_str: str = None):
             torch.cuda.empty_cache()
         else:
             device_str = 'cpu'
+    else:
+        device_str = f'cuda:{device_number}'
 
     info_msg = f'Device for model training/inference: {device_str}'
+    print(info_msg)
     device = torch.device(device_str)
     logger.info(info_msg)
 
     return device, device_str
 
 
-class DTRdataset(Dataset):
+class DETRdataset(Dataset):
     def __init__(self,
                  data: pd.DataFrame,
                  image_processor,
@@ -46,6 +49,7 @@ class DTRdataset(Dataset):
                  file_name_col: str,
                  label_id_col: str,
                  bbox_col: str,
+                 bbox_format: dict = None,
                  transforms: list = None):
 
         self.data = data
@@ -55,13 +59,15 @@ class DTRdataset(Dataset):
         self.label_id_col = label_id_col
         self.bbox_col = bbox_col
         self.transforms = transforms
+        self.bbox_format = bbox_format
         if transforms is None:
             self.transforms = [alb.NoOp()]
         self.file_list = [os.path.join(image_dir, file) for file in list(data[file_name_col].unique())]
         assert self.validate()
-        self.bbox_format = {'format': 'coco',
-                            'label_fields': ['tooth_position'],
-                            'clip': True}
+        if bbox_format is None:
+            self.bbox_format = {'format': 'coco',
+                                'label_fields': ['tooth_position'],
+                                'clip': True}
 
     def validate(self):
         """ Making sure all images can be read """

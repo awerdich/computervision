@@ -1,34 +1,51 @@
 """ Methods for transforming images and bounding boxes """
 import numpy as np
+import logging
 import albumentations as alb
 from dataclasses import dataclass
 
+logger = logging.getLogger(__name__)
+
 @dataclass
 class AugmentationTransform:
-    image_width: int
-    image_height: int
+    im_width: int
+    im_height: int
 
     def get_transforms(self, name: str) -> list:
-        if name == "train_1":
-            # Transformations for training
-            transforms = [alb.RandomCropFromBorders(crop_left=0.3, crop_right=0.3, crop_top=0.5, crop_bottom=0.5, p=1.0),
-                          alb.CenterCrop(height=self.image_height, width=self.image_width, pad_if_needed=True),
-                          alb.Affine(scale=(0.8, 1.2), rotate=1, p=0.5),
-                          alb.RandomBrightnessContrast(p=0.5),
-                          alb.Sharpen(p=0.5),
-                          alb.CLAHE(p=0.5)]
+        if name == "train_14_23":
+            # Transformation for training on quadrants 14/23
+            crop_transforms = [alb.RandomCropFromBorders(crop_left=0.3,
+                                                         crop_right=0.3,
+                                                         crop_top=0.5,
+                                                         crop_bottom=0.5, p=1.0),
+                               alb.CenterCrop(height=self.im_height,
+                                              width=self.im_width,
+                                              pad_if_needed=True, p=1.0)]
 
-        elif name == "val_1":
-            # This transform should be applied on the test set created by the "test_set" transform
-            transforms = [alb.CenterCrop(height=self.image_height, width=self.image_width, pad_if_needed=True)]
+            image_transforms = [alb.Affine(scale=(0.8, 1.2), rotate=1, p=0.5),
+                                alb.RandomBrightnessContrast(p=0.5),
+                                alb.Sharpen(p=0.5),
+                                alb.CLAHE(p=0.5)]
+
+        elif name == "val":
+            crop_transforms = [alb.NoOp(p=1)]
+            image_transforms = [alb.AutoContrast(p=1), alb.CLAHE(p=1)]
 
         elif name == "test_set":
             # Transformations for creating the test/validation sets
-            transforms = [alb.RandomCropFromBorders(crop_left=0.3, crop_right=0.3, crop_top=0.5, crop_bottom=0.5, p=1.0),
-                          alb.RandomBrightnessContrast(p=1.0)]
+            crop_transforms = [alb.RandomCropFromBorders(crop_left=0.3,
+                                                         crop_right=0.3,
+                                                         crop_top=0.5,
+                                                         crop_bottom=0.5, p=1.0)]
+            image_transforms = [alb.RandomBrightnessContrast(p=1.0)]
 
         else:
-            raise NotImplementedError('Transformation "{}" not implemented'.format(name))
+            logger.error('Transformation "{}" not implemented'.format(name))
+            print('Transformation "{}" not implemented'.format(name))
+            crop_transforms = [alb.NoOp(p=1)]
+            image_transforms = [alb.NoOp(p=1)]
+
+        transforms = crop_transforms + image_transforms
 
         return transforms
 

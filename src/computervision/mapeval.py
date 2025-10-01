@@ -56,9 +56,9 @@ class MAPEvaluator:
         for batch, target_sizes in zip(predictions, image_sizes):
             batch_logits, batch_boxes = batch[1], batch[2]
             output = ModelOutput(logits=torch.tensor(batch_logits), pred_boxes=torch.tensor(batch_boxes))
-            post_processed_output = self.image_processor.post_process_object_detection(
-                output, threshold=self.threshold, target_sizes=target_sizes
-            )
+            post_processed_output = self.image_processor.\
+                post_process_object_detection(output, threshold=self.threshold,
+                                              target_sizes=target_sizes)
             post_processed_predictions.extend(post_processed_output)
         return post_processed_predictions
 
