@@ -4,5 +4,8 @@
 
 # Run jupyter notebook
 jupyter lab --ip=0.0.0.0 --allow-root --port=8888 \
-				--ContentsManager.allow_hidden=True \
-				--notebook-dir=/app/notebooks
+	--ContentsManager.allow_hidden=True \
+	--notebook-dir=/app/notebooks
+
+# TensorBoard
+# tensorboard --port=6006 --logdir=$DATA/model
