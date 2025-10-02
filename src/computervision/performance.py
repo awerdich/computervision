@@ -1,6 +1,7 @@
 """ Performance metrics for computer vision models """
 
 import numpy as np
+import pandas as pd
 import torch
 from torchvision import ops
 from computervision.imageproc import xywh2xyxy
@@ -8,6 +9,54 @@ from computervision.imageproc import xywh2xyxy
 class DetectionMetrics:
     def __init__(self):
         pass
+
+    @staticmethod
+    def classify_predictions(true_labels: list,
+                             true_bboxes: list,
+                             pred_labels: list,
+                             pred_bboxes: list,
+                             iou_threshold: float = 0.5) -> tuple:
+
+        # Make sure that the true and pred labels have the same type
+        assert all([isinstance(true_labels, list), isinstance(pred_labels, list)])
+        assert all([isinstance(true_bboxes, list), isinstance(pred_bboxes, list)])
+
+        # Missed predictions (FN)
+        missed = sorted(list(set(true_labels).difference(pred_labels)))
+        # Classify predictions (TP:1, FP:0)
+        iou_list = []
+        prediction_list = []
+        for p, p_label in enumerate(pred_labels):
+            p_bbox = pred_bboxes[p]
+            p_prediction = 0  # FP
+            p_iou = np.nan
+            pt_iou_list = []
+            for t, t_label in enumerate(true_labels):
+                if p_label == t_label:
+                    t_bbox = true_bboxes[t]
+                    pt_iou = DetectionMetrics.compute_iou(p_bbox, t_bbox, bbox_format='xywh', method='pt')
+                    pt_iou_list.append(pt_iou)
+            if len(pt_iou_list) > 0:
+                p_iou = np.max(pt_iou_list)
+                if p_iou >= iou_threshold:
+                    p_prediction = 1  # TP
+            prediction_list.append(p_prediction)
+            iou_list.append(p_iou)
+
+        pred_df = pd.DataFrame({'pred_label': pred_labels,
+                                'TP': prediction_list,
+                                'IoU': iou_list})
+
+        pred_df = pred_df.assign(FN=len(missed),
+                                 duplicate_TP=False)
+
+        output_df = pred_df.copy()
+        # Flip duplicate TP predictions for the same label with FP
+        output_df.loc[(pred_df.duplicated(subset=['pred_label', 'TP'])) & (pred_df['TP'] == 1), 'TP'] = 0
+        output_df.loc[(pred_df.duplicated(subset=['pred_label', 'TP'])) & (pred_df['TP'] == 1), 'duplicate_TP'] = True
+
+        return missed, output_df
+
 
     @staticmethod
     def compute_iou(bbox_1: list, bbox_2: list, bbox_format: str, method: str = 'np') -> float:
