@@ -17,7 +17,6 @@ def xcycwh_to_xyxy(xcycwh: np.ndarray) -> np.ndarray:
     xyxy[:, 3] = xcycwh[:, 1] + xcycwh[:, 3] / 2
     return xyxy
 
-
 @dataclass
 class ModelOutput:
     logits: torch.Tensor
