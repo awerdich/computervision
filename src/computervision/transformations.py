@@ -135,7 +135,7 @@ class DETRansform:
 
         # Annotations for the model using the transformed image, bounding boxes and labels
         annotation_list = []
-        # This list can only contain data if the transformed output contains at leaset one bounding box
+        # This list can only contain data if the transformed output contains at least one bounding box
         if len(output_labels) > 0:
             for bbox, label in zip(output_bboxes, output_labels):
                 assert len(bbox) == 4, f'Incompatible bounding box: {bbox}'
