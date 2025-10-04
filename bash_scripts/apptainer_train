@@ -1,0 +1,30 @@
+#!/bin/bash
+
+REPO_DIR=$HOME/gitrepos/computervision
+SCRIPT_DIR=/app/src/computervision/scripts
+DATA_DIR=$HOME/data/data_model
+SIF_DIR=$HOME/data/sif
+
+# Pull the container locally if you haven't already
+cd $SIF_DIR
+export cvtoken="$cvtoken"
+
+# Authenticate: not needed for public images
+echo $cvtoken | docker login ghcr.io -u awerdich --password-stdin
+
+# Pull the image from the GitHub Container Registry
+apptainer pull --dir $SIF_DIR docker://ghcr.io/awerdich/computervision:latest
+
+apptainer exec \
+	--bind $REPO_DIR:/app \
+	--bind $DATA_DIR:/app/data_model \
+	--env-file $REPO_DIR/.env \
+	--fakeroot \
+	--containall \
+	--no-init \
+	--no-umask \
+	--no-eval \
+	--compat \
+	--nv \
+	docker://ghcr.io/awerdich/computervision:latest \
+	python $SCRIPT_DIR/$1
