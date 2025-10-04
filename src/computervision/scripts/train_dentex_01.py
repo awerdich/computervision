@@ -24,16 +24,22 @@ from computervision.transformations import AugmentationTransform
 from computervision.mapeval import MAPEvaluator
 
 #%% Data files and directories
+model_version = 1
+date_str = datetime.date.today().strftime('%y%m%d')
+model_name = f'rtdetr_{date_str}_{str(model_version).zfill(2)}'
+print(f'Model name: {model_name}')
 data_dir = os.environ.get('DATA')
 if data_dir is None:
     raise ValueError("DATA environment variable must be set")
-train_image_dir = os.path.join(data_dir, 'dentex_detection_250928')
-val_image_dir = os.path.join(train_image_dir,'test')
 model_dir = os.path.join(data_dir, 'model')
+model_name_dir = os.path.join(model_dir, model_name)
+Path(model_name_dir).mkdir(parents=True, exist_ok=True)
 
-Path(model_dir).mkdir(parents=True, exist_ok=True)
+train_image_dir = os.path.join(data_dir, 'dentex_detection_250928')
 train_annotation_file_name = 'train_quadrant_enumeration_dset.parquet'
 train_annotation_file = os.path.join(train_image_dir, train_annotation_file_name)
+
+val_image_dir = os.path.join(train_image_dir,'test')
 val_annotation_file_name = 'train_quadrant_enumeration_test_set.parquet'
 val_annotation_file = os.path.join(val_image_dir, val_annotation_file_name)
 
@@ -45,13 +51,8 @@ dset_col = 'dset'
 
 #%% Model and training parameters
 # Training and model parameters
-model_version = 1
-device_number = 2
-os.environ['CUDA_VISIBLE_DEVICES'] = str(device_number)
+device_number = 0
 device, device_str = get_gpu_info(device_number=device_number)
-date_str = datetime.date.today().strftime('%y%m%d')
-model_name = f'rtdetr_{date_str}_{str(model_version).zfill(2)}'
-print(f'Model name: {model_name}')
 
 # Image transformations for training and validation
 im_width, im_height = 640, 640
@@ -71,7 +72,6 @@ model_info = {'model_version': model_version,
               'model_name': model_name,
               'train_image_dir': train_image_dir,
               'val_image_dir': val_image_dir,
-              'model_dir': model_dir,
               'im_width': im_width,
               'im_height': im_height,
               'hf_checkpoint': 'PekingU/rtdetr_v2_r101vd',
@@ -79,16 +79,17 @@ model_info = {'model_version': model_version,
               'train_quadrants': train_quadrants,
               'val_quadrants': val_quadrants,
               'train_transform_name': train_transform_name,
-              'val_transform_name': val_transform_name}
+              'val_transform_name': val_transform_name,
+              'val_score_threshold': 0.02}
 
 # Specific arguments for the Trainer. 48
 # See: https://huggingface.co/docs/transformers/en/main_classes/trainer#trainer
-training_args = {'output_dir': os.path.join(model_dir, model_name),
-                 'num_train_epochs': 250,
+training_args = {'output_dir': model_name_dir,
+                 'num_train_epochs': 2,
                  'max_grad_norm': 0.1,
                  'learning_rate': 5e-5,
                  'warmup_steps': 300,
-                 'per_device_train_batch_size': 48,
+                 'per_device_train_batch_size': 4,
                  'dataloader_num_workers': 8,
                  'metric_for_best_model': 'eval_map',
                  'greater_is_better': True,
@@ -160,13 +161,13 @@ parameters = {'model_info': model_info,
               'processor_params': processor_params,
               'bbox_format': bbox_format}
 
-json_file = os.path.join(model_dir, f'{model_name}.json')
+json_file = os.path.join(model_name_dir, f'{model_name}.json')
 with open(json_file, 'w') as f:
     json.dump(parameters, f, indent=4) # indent for pretty-printing
 
 # Set up the logger
 log_file_name = f'{model_name}.log'
-log_file = os.path.join(model_dir, log_file_name)
+log_file = os.path.join(model_name_dir, log_file_name)
 dtfmt = '%y%m%d-%H:%M'
 logfmt = '%(asctime)s-%(name)s-%(levelname)s-%(message)s'
 
@@ -222,7 +223,10 @@ def collate_fn(batch):
     return data
 
 # Set the evaluation metrics
-eval_compute_metrics_fn = MAPEvaluator(image_processor=processor, threshold=0.5, id2label=id2label)
+eval_compute_metrics_fn = MAPEvaluator(image_processor=processor,
+                                       threshold=model_info.get('val_score_threshold'),
+                                       id2label=id2label)
+
 training_arguments = TrainingArguments(**training_args)
 
 trainer = Trainer(model=model,
