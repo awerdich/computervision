@@ -6,7 +6,7 @@ DATA_DIR=$HOME/data/data_model
 SIF_DIR=$HOME/data/sif
 
 # Pull the container locally if you haven't already
-cd $SIF_DIR
+# cd $SIF_DIR
 export cvtoken="$cvtoken"
 
 # Authenticate: not needed for public images
@@ -26,5 +26,5 @@ apptainer exec \
 	--no-eval \
 	--compat \
 	--nv \
-	docker://ghcr.io/awerdich/computervision:latest \
+	$SIF_DIR/computervision_latest.sif \
 	python $SCRIPT_DIR/$1
