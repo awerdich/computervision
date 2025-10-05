@@ -38,7 +38,7 @@ model_name_dir = os.path.join(model_dir, model_name)
 Path(model_name_dir).mkdir(parents=True, exist_ok=True)
 
 train_image_dir = os.path.join(data_dir, 'dataset_object_roboflow_240930')
-train_annotation_file_name = 'roboflow_dset.parquet'
+train_annotation_file_name = 'roboflow_240930_dset.parquet'
 train_annotation_file = os.path.join(train_image_dir, train_annotation_file_name)
 
 val_image_dir = train_image_dir
