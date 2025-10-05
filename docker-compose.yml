@@ -1,6 +1,6 @@
 services:
   app:
-    image: computervision:latest
+    image: computervision:0.0.2
     container_name: computervision
     deploy:
       resources:
