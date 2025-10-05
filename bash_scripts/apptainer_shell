@@ -1,8 +1,8 @@
 #!/bin/bash
 
 REPO_DIR=$HOME/gitrepos/computervision
-DATA_DIR=$HOME/data/data_model
-SIF_DIR=$HOME/data/sif
+DATA_DIR="/n/lw_groups/cores/ccb/lab/projects/hsdm/toothmodel"
+SIF_DIR="/n/app/containers/shared/ccb"
 
 # Pull the container locally if you haven't already
 cd $SIF_DIR
@@ -25,5 +25,5 @@ apptainer exec \
 	--no-eval \
 	--compat \
 	--nv \
-	docker://ghcr.io/awerdich/computervision:latest \
+	$SIF_DIR/computervision_latest.sif \
 	/bin/bash
