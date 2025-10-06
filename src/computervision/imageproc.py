@@ -13,8 +13,58 @@ import logging
 import itertools
 from skimage import io
 from PIL import Image
+from matplotlib import pyplot as plt
+from matplotlib.patches import Rectangle
 
 logger = logging.getLogger(name=__name__)
+
+def plot_boxes(image, box_list, ax, label_list=None, color=None, cmap='grey', offset_xy=(0, 0)):
+    """
+    Plots bounding boxes on an image using the provided axis and optionally adds labels for each box.
+    It allows you to visualize bounding boxes in different colors and optionally with specific labels.
+    Supports customization of colors and colormap.
+
+    Args:
+        image: ndarray. Input image array on which the bounding boxes will be plotted.
+        box_list: list of tuples. Each tuple represents a bounding box defined as
+            (x-coordinate, y-coordinate, width, height).
+        ax: matplotlib.axes.Axes. The axis on which to plot the image and bounding boxes.
+        label_list: list of str, optional. A list of labels corresponding to each bounding
+            box in `box_list`. Default is None.
+        color: matplotlib color, optional. The color to use for all bounding boxes.
+            If not provided, a different color will be assigned to each box. Default is None.
+        cmap: str, optional. Colormap to use when displaying the image. Default is 'grey'.
+        offset_xy: tuple of int, optional. Offset for label placement in (x, y) direction.
+            Default is (0, 0).
+
+    Returns:
+        matplotlib.axes.Axes. The axis with the plotted image, bounding boxes, and optional labels.
+    """
+    offset_xy = (10 + offset_xy[0], 100 + offset_xy[1])
+    # Take a ratio that looks good
+    offset = (image.shape[1]*offset_xy[0]/2500,
+              image.shape[0]*offset_xy[1]/1250)
+    if color is None:
+        # If no color is provided, color each box in a different color
+        color_list = list(plt.cm.rainbow(np.linspace(0, 1, len(box_list))))
+    else:
+        color_list = [color]*len(box_list)
+    ax.set(xticks=[], yticks=[])
+    ax.imshow(image, cmap=cmap)
+    # Loop over the bounding boxes
+    for b, box in enumerate(box_list):
+        rect = Rectangle(xy=(box[0], box[1]),
+                         width=box[2],
+                         height=box[3],
+                         linewidth=1.5,
+                         edgecolor=color_list[b],
+                         facecolor='none',
+                         alpha=0.7)
+        ax.add_patch(rect)
+        if label_list is not None:
+            ax.text(x=box[0]+offset[0], y=box[1]+offset[1], s=label_list[b], color=color_list[b], fontsize=8)
+    return ax
+
 
 
 def clip_range(r, min_val=0, max_val=1):
