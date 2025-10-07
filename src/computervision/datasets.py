@@ -47,8 +47,8 @@ class DETRdataset(Dataset):
                  image_processor,
                  image_dir: str,
                  file_name_col: str,
-                 label_id_col: str,
-                 bbox_col: str,
+                 label_id_col: str = None,
+                 bbox_col: str = None,
                  bbox_format: dict = None,
                  transforms: list = None):
 
@@ -93,21 +93,26 @@ class DETRdataset(Dataset):
         # Convert to RGB
         if len(image.shape) == 2:
             image = ImageData().np2color(image)
-        bboxes = self.data.loc[self.data[self.file_name_col] == file_name, self.bbox_col].tolist()
-        labels = self.data.loc[self.data[self.file_name_col] == file_name, self.label_id_col].tolist()
-
-        # Apply image transform
-        detr = DETRansform(bbox_format=self.bbox_format, transforms=self.transforms)
-        transformed_im, transformed_annotations = detr. \
-            format_transform(image=image, image_id=idx, bboxes=bboxes, labels=labels)
+        if any(var is None for var in [self.label_id_col, self.bbox_col]):
+            transformation = alb.Compose(self.transforms)
+            # Apply image transform
+            transformed_im = transformation(image=image)['image']
+            transformed_annotations = {'image_id': idx, 'annotations': []}
+        else:
+            bboxes = self.data.loc[self.data[self.file_name_col] == file_name, self.bbox_col].tolist()
+            labels = self.data.loc[self.data[self.file_name_col] == file_name, self.label_id_col].tolist()
+            # Apply image transform
+            detr = DETRansform(bbox_format=self.bbox_format, transforms=self.transforms)
+            transformed_im, transformed_annotations = detr. \
+                format_transform(image=image, image_id=idx, bboxes=bboxes, labels=labels)
 
         # Apply the image processor to the augmentation transform
         processed = self.image_processor(images=transformed_im,
                                          annotations=transformed_annotations,
                                          return_tensors='pt')
 
-        # The processor returns lists for "pixel_values" and labels
-        # But we need only one image and the annotations for that image
+        # The processor returns lists for "pixel_values" and annotations,
+        # but we need only one image and the annotations for that image
         output = {k: v[0] for k, v in processed.items()}
 
         return output
