@@ -11,7 +11,7 @@ from transformers import RTDetrV2ForObjectDetection, RTDetrImageProcessor
 
 logger = logging.getLogger(name=__name__)
 
-class DetrInference:
+class DETRInference:
     """DETR inference class"""
     def __init__(self, device=None, checkpoint_path=None, batch_size=4):
         if device is None:
