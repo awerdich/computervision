@@ -61,7 +61,7 @@ class DETRInference:
             scores = output[0].get('scores').cpu().numpy()
             categories = [int(c) for c in categories]
             scores = [np.around(s, decimals=4) for s in scores]
-            predictions = {'bboxes': bboxes, 'areas': areas, 'categories': categories, 'scores': scores}
+            predictions = {'bbox': bboxes, 'area': areas, 'category_id': categories, 'score': scores}
         else:
             logger.warning(f'No predictions for threshold {threshold}.')
             predictions = None

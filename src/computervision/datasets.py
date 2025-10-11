@@ -8,7 +8,7 @@ import torch
 import logging
 from torch.utils.data import Dataset
 import albumentations as alb
-from computervision.imageproc import ImageData, is_image
+from computervision.imageproc import ImageData, is_image, clipxywh
 from computervision.transformations import DETRansform
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,7 @@ class DETRdataset(Dataset):
             self.bbox_format = {'format': 'coco',
                                 'label_fields': ['tooth_position'],
                                 'clip': True}
+        assert self.bbox_format['format'] == 'coco', 'Only "coco" format is supported.'
 
     def validate(self):
         """ Making sure all images can be read """
@@ -100,6 +101,8 @@ class DETRdataset(Dataset):
             transformed_annotations = {'image_id': idx, 'annotations': []}
         else:
             bboxes = self.data.loc[self.data[self.file_name_col] == file_name, self.bbox_col].tolist()
+            bboxes = [clipxywh(list(box), xlim=(0, image.shape[1]), ylim=(0, image.shape[0]), decimals=0) \
+                      for box in bboxes]
             labels = self.data.loc[self.data[self.file_name_col] == file_name, self.label_id_col].tolist()
             # Apply image transform
             detr = DETRansform(bbox_format=self.bbox_format, transforms=self.transforms)

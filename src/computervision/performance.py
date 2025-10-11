@@ -4,22 +4,33 @@ import numpy as np
 import pandas as pd
 import torch
 from torchvision import ops
-from computervision.imageproc import xywh2xyxy
+from computervision.imageproc import xywh2xyxy, clipxywh
 
 class DetectionMetrics:
-    def __init__(self):
-        pass
+    def __init__(self, im_width: int, im_height: int, bbox_format: str = 'xywh'):
+        self.x_lim = (0, im_width)
+        self.y_lim = (0, im_height)
+        self.bbox_format = bbox_format
+        assert bbox_format in ['xyxy', 'xywh'], 'bbox_format should be either "xyxy" or "xywh"'
 
-    @staticmethod
-    def classify_predictions(true_labels: list,
+    def classify_predictions(self,
+                             true_labels: list,
                              true_bboxes: list,
                              pred_labels: list,
                              pred_bboxes: list,
                              iou_threshold: float = 0.5) -> tuple:
 
-        # Make sure that the true and pred labels have the same type
+        # Make sure that the true and pred labels are lists
         assert all([isinstance(true_labels, list), isinstance(pred_labels, list)])
         assert all([isinstance(true_bboxes, list), isinstance(pred_bboxes, list)])
+
+        # Make sure that the true and pred labels are the same length
+        assert len(true_labels) == len(true_bboxes), 'labels and bboxes (true) must be the same length'
+        assert len(pred_labels) == len(pred_bboxes), 'labels and bboxes (pred) must be the same length'
+
+        # Clip bounding boxes to image dimensions
+        true_bboxes = [clipxywh(bbox, xlim=self.x_lim, ylim=self.y_lim, decimals=0) for bbox in true_bboxes]
+        pred_bboxes = [clipxywh(bbox, xlim=self.x_lim, ylim=self.y_lim, decimals=0) for bbox in pred_bboxes]
 
         # Missed predictions (FN)
         missed = sorted(list(set(true_labels).difference(pred_labels)))
@@ -59,7 +70,7 @@ class DetectionMetrics:
 
 
     @staticmethod
-    def compute_iou(bbox_1: list, bbox_2: list, bbox_format: str, method: str = 'np') -> float:
+    def compute_iou(bbox_1: list, bbox_2: list, bbox_format: str = 'xywh', method: str = 'np') -> float:
         assert method in ['np', 'pt'], 'method should be either "np" or "pt"'
         assert bbox_format in ['xyxy', 'xywh'], 'bbox_format should be either "xyxy" or "xywh"'
         iou = None
